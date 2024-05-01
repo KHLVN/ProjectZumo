@@ -1,13 +1,19 @@
-int IN1 = 2;
-int IN2 = 3;
-int IN3 = 4;
-int IN4 = 5;
+#include <Ultrasonic.h>
+
+int motor2pin2 = 5;
+int motor2pin1 = 4;
+int motor1pin2 = 3;
+int motor1pin1 = 2;
 
 int triggerPin = 6;
 int echoPin = 7;
 
 int ENA = 9;
 int ENB = 10;
+
+int distance, frontSensVal, backSensVal;
+
+Ultrasonic ultrasonic(triggerPin, echoPin);
 
 #define frontIR A3
 #define backIR A2
@@ -26,12 +32,12 @@ void setup() {
   Serial.begin(9600);
 
   //Left Motor
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
+  pinMode(motor2pin2, OUTPUT);
+  pinMode(motor2pin1, OUTPUT);
 
   //Right Motor 
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
+  pinMode(motor1pin2, OUTPUT);
+  pinMode(motor1pin1, OUTPUT);
 
   //Enable PWM
   pinMode(ENA, OUTPUT);
@@ -44,35 +50,54 @@ void setup() {
 
 //-------------------------LOOP----------------------------
 void loop() {
-  delay(5000);
-  int frontSensVal = analogRead(frontIR);
-  int backSensVal = analogRead(backIR);
+  delay(1000);
 
-  int distance = readTime(triggerPin, echoPin) * 0.01715;
+  distance = ultrasonic.read();
 
-  while(distance <= 20) {
-    forward(255);
+  frontSensVal = analogRead(frontIR);
+  backSensVal = analogRead(backIR);
 
-    if (frontSensVal <= 500 || backSensVal <= 500) {
-        break;
-    }
-  }
-
-  // For Sensing Outer White Ring
-  if(backSensVal <= 500) {
-    stop();
-    delay(50);
-    forward(255);
-    delay(750);
-  }
+  //For Sensing Outer White Ring
+  
   if(frontSensVal <= 500) {
-    stop();
-    delay(50);
     reverse(255);
     delay(1000);
+
     turnLeft(255);
-    delay(50);
+    delay(1370);
+    
     forward(255);
+    delay(1000);
+    
+    stop();
+  }
+  if(backSensVal <= 500) {
+    forward(255);
+    delay(1000);
+    
+    turnLeft(255);
+    delay(2740);
+    
+    stop();
+  }
+
+  if(distance <= 35) {
+    do {
+      forward(255); 
+
+      distance = ultrasonic.read();
+      frontSensVal = analogRead(frontIR);
+      backSensVal = analogRead(backIR);
+
+      if (frontIR > 512 || backIR  > 512) { 
+        break;
+      }
+      delay(10);
+    }
+    while(distance <= 40);
+  }
+  else {
+    turnLeft(60);
   }
 }
 
@@ -81,47 +106,48 @@ void forward(int speed) {
   analogWrite(ENA, speed);
   analogWrite(ENB, speed);
 
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
+  digitalWrite(motor1pin1, HIGH);
+  digitalWrite(motor1pin2, LOW);
+  digitalWrite(motor2pin1, HIGH);
+  digitalWrite(motor2pin2, LOW);
+
 }
 
 void reverse(int speed) {
   analogWrite(ENA, speed);
   analogWrite(ENB, speed);
   
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
+  digitalWrite(motor1pin1, LOW);
+  digitalWrite(motor1pin2, HIGH);
+  digitalWrite(motor2pin1, LOW);
+  digitalWrite(motor2pin2, HIGH);
 }
 
 void turnLeft(int speed) {
   analogWrite(ENA, speed);
   analogWrite(ENB, speed);
   
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);  
+  digitalWrite(motor1pin1, LOW);  
+  digitalWrite(motor1pin2, HIGH);
+  digitalWrite(motor2pin1, HIGH);
+  digitalWrite(motor2pin2, LOW);
 }
 
 void turnRight(int speed) {
   analogWrite(ENA, speed);
   analogWrite(ENB, speed);
   
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
+  digitalWrite(motor1pin1, HIGH);
+  digitalWrite(motor1pin2, LOW);
+  digitalWrite(motor2pin1, LOW);
+  digitalWrite(motor2pin2, HIGH);
 }
 
 void stop() {
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);  
+  digitalWrite(motor1pin1, LOW);  
+  digitalWrite(motor1pin2, LOW);
+  digitalWrite(motor2pin1, LOW);
+  digitalWrite(motor2pin2, LOW);
 }
 
 float readTime(int triggerPin, int echoPin) {
